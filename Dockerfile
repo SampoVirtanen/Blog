@@ -1,11 +1,17 @@
-FROM node:20-alpine
+FROM node:24.21.0-alpine3.23 AS build
+WORKDIR /usr/src/app
+COPY package.json package-lock.json ./
+RUN apk add --no-cache python3 make g++ \
+    && npm ci --omit=dev
+FROM node:24.21.0-alpine3.23
 ENV NODE_ENV=production
 WORKDIR /usr/src/app
-COPY ["package.json", "package-lock.json*", "npm-shrinkwrap.json*", "./"]
-RUN apk add python3 py3-pip build-base
-RUN npm install --omit=dev && mv node_modules ../
+COPY --from=build /usr/src/app/node_modules ./node_modules
 COPY . .
+RUN rm -rf /usr/local/lib/node_modules/npm \
+    /usr/local/bin/npm \
+    /usr/local/bin/npx
 EXPOSE 3000
-RUN chown -R node /usr/src/app
+RUN chown -R node:node /usr/src/app
 USER node
-CMD ["npm", "start"]
+CMD ["node", "./bin/www"]
