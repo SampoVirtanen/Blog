@@ -10,6 +10,17 @@ pipeline {
                 sh 'git pull origin main'
             }
         }
+        stage('OWASP Dependency-Check Vulnerabilities') {
+            steps {
+                dependencyCheck additionalArguments: ''' 
+                            -o './'
+                            -s './'
+                            -f 'ALL' 
+                            --prettyPrint''', odcInstallation: 'OWASP Dependency-Check'
+                
+                dependencyCheckPublisher pattern: 'dependency-check-report.xml'
+            }
+        }
         stage('Build') {
             steps {
                 sh 'docker build --pull --rm -f "Dockerfile" -t blog:latest "."'
