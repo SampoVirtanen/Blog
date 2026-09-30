@@ -10,6 +10,21 @@ pipeline {
                 sh 'git pull origin main'
             }
         }
+        stage('Unit tests') {
+            steps {
+                sh '''
+                    docker run --rm \
+                        -v "$WORKSPACE:/workspace:ro" \
+                        node:24.21.0-alpine3.23 \
+                        sh -c 'apk add --no-cache python3 make g++ &&
+                            mkdir /tmp/blog-test &&
+                            cp -R /workspace/. /tmp/blog-test/ &&
+                            cd /tmp/blog-test &&
+                            npm ci &&
+                            npm test'
+                '''
+            }
+        }
         stage('Build') {
             steps {
                 sh 'docker build --pull --rm -f "Dockerfile" -t blog:latest "."'
