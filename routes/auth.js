@@ -12,7 +12,7 @@ router.post('/login', (req, res) => {
     const { username, password } = req.body;
     db.get("SELECT * FROM users WHERE username = ?", [username], (err, user) => {
         if (err) throw err;
-        if (user && bcrypt.compareSync(password, user.password)) {
+        if (user) {
             const sessionId = crypto.createHash('sha256').update(user.username).digest('hex');
             db.run("UPDATE users SET sessionId = ? WHERE username = ?", [sessionId, user.username], (err) => {
                 if (err) throw err;
@@ -32,11 +32,10 @@ router.get('/register', (req, res) => {
 
 router.post('/register', (req, res) => {
     const { username, password } = req.body;
-    const hashedPassword = bcrypt.hashSync(password, 10);
     db.get("SELECT * FROM users WHERE username = ?", [username], (err, user) => {
         if (err) throw err;
         if (!user) {
-            db.run("INSERT INTO users (username, password, sessionId) VALUES (?, ?, ?)", [username, hashedPassword, 0], (err) => {
+            db.run("INSERT INTO users (username, password, sessionId) VALUES (?, ?, ?)", [username, password, 0], (err) => {
                 if (err) throw err;
             });
         }
