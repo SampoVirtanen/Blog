@@ -88,6 +88,21 @@ describe("Creating posts", () => {
 				err ? reject(err) : resolve()
 			);
 		});
+		await new Promise((resolve, reject) => {
+			db.run("DELETE FROM posts WHERE title = 'Test post (Logged in)' AND content = 'This is a test (Logged in)'", (err) =>
+				err ? reject(err) : resolve()
+			);
+		});
+		await new Promise((resolve, reject) => {
+			db.run("DELETE FROM posts WHERE title = 'Test post (Not logged in)' AND content = 'This is a test (Not logged in)'", (err) =>
+				err ? reject(err) : resolve()
+			);
+		});
+		await new Promise((resolve, reject) => {
+			db.run("UPDATE sqlite_sequence SET seq=4 WHERE name='posts'", (err) =>
+				err ? reject(err) : resolve()
+			);
+		});
 	});
 
 	test("Logged in", async () => {
@@ -109,8 +124,6 @@ describe("Creating posts", () => {
 		});
 		expect(post.title).toBe("Test post (Logged in)");
 		expect(post.content).toBe("This is a test (Logged in)");
-		db.run("DELETE FROM posts WHERE title = 'Test post (Logged in)' AND content = 'This is a test (Logged in)'")
-		db.run("UPDATE sqlite_sequence SET seq=4 WHERE name='posts'")
 	});
 
 	test("Not logged in", async () => {
@@ -123,15 +136,13 @@ describe("Creating posts", () => {
 			});
 		expect(response.status).toBe(302);
 		expect(response.headers.location).toBe("/auth/login");
-		db.get(
-			"SELECT * FROM posts ORDER BY id desc LIMIT 1",
-			(err, post) => {
-				if (err) throw err;
-				expect(post.title).not.toBe("Test post (Not logged in)");
-				expect(post.content).not.toBe("This is a test (Not logged in)");
-			}
-		);
-		db.run("DELETE FROM posts WHERE title = 'Test post (Not logged in)' AND content = 'This is a test (Not logged in)'")
-		db.run("UPDATE sqlite_sequence SET seq=4 WHERE name='posts'")
+		const post = await new Promise((resolve, reject) => {
+			db.get("SELECT * FROM posts ORDER BY id desc LIMIT 1", (err, row) => {
+				if (err) reject(err);
+				else resolve(row);
+			});
+		});
+		expect(post.title).not.toBe("Test post (Not logged in)");
+		expect(post.content).not.toBe("This is a test (Not logged in)");
 	});
 });
