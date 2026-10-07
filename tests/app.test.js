@@ -102,14 +102,15 @@ describe("Creating posts", () => {
 		expect(response.status).toBe(302);
 		expect(response.headers.location).toBe("/");
 		const post = await new Promise((resolve, reject) => {
-			db.get("SELECT * FROM posts WHERE title = ?", ["Test post (Logged in)"], (err, row) => {
+			db.get("SELECT * FROM posts ORDER BY id desc LIMIT 1", (err, row) => {
 				if (err) reject(err);
 				else resolve(row);
 			});
 		});
-
 		expect(post.title).toBe("Test post (Logged in)");
-		expect(post.content).toBe("This is a test");
+		expect(post.content).toBe("This is a test (Logged in)");
+		db.run("DELETE FROM posts WHERE title = 'Test post (Logged in)' AND content = 'This is a test (Logged in)'")
+		db.run("UPDATE sqlite_sequence SET seq=4 WHERE name='posts'")
 	});
 
 	test("Not logged in", async () => {
@@ -123,12 +124,14 @@ describe("Creating posts", () => {
 		expect(response.status).toBe(302);
 		expect(response.headers.location).toBe("/auth/login");
 		db.get(
-			"SELECT * FROM posts LIMIT 1",
+			"SELECT * FROM posts ORDER BY id desc LIMIT 1",
 			(err, post) => {
 				if (err) throw err;
 				expect(post.title).not.toBe("Test post (Not logged in)");
 				expect(post.content).not.toBe("This is a test (Not logged in)");
 			}
 		);
+		db.run("DELETE FROM posts WHERE title = 'Test post (Not logged in)' AND content = 'This is a test (Not logged in)'")
+		db.run("UPDATE sqlite_sequence SET seq=4 WHERE name='posts'")
 	});
 });
